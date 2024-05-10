@@ -32,4 +32,4 @@ int main(int argc, char **argv)
    return 0;
 }
 
-//export OMP_NUM_THREADS=numero da utilizzare.
+//export OMP_NUM_THREADS=numero da utilizzare
