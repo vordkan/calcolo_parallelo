@@ -4,6 +4,11 @@
 * Calcolarne il massimo, con una procedura parallela.
 */
 
+
+/*
+    if su NC se è 2,4,8,16 con reduction
+    altrimenti critical()
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -19,7 +24,7 @@ int** creaMatrice(int n){
 
     for(int i = 0; i < n; i++){
         for(int j = 0; j < n; j++){
-            mat[i][j] = rand() % 258;
+            mat[i][j] = rand() % 5000;
         }
     }
 
@@ -56,9 +61,23 @@ void visualizzaDiagonale(int *diagonale, int n){
     printf("\n");
 }
 
-int max(int *diagonale, int n){
+int max_strategia1(int *diagonale, int n) {
+    int massimo = 0, i;
+
+    #pragma omp parallel for shared(diagonale, n) private(i) num_threads(NC)
+    for(i = 0; i < n; i++) {
+        #pragma omp critical
+        {
+            if(diagonale[i] > massimo)
+                massimo = diagonale[i];
+        }
+    }
+    return massimo;
+}
+
+int max_strategia2(int *diagonale, int n){
     int massimo = 0, i = 0;
-    #pragma omp parallel for shared(diagonale, n) private (i) reduction(max:massimo) num_threads(NC)// seconda strategia
+    #pragma omp parallel for shared(diagonale, n) private (i) reduction(max:massimo) num_threads(NC)
     for(i = 0; i < n; i++)
     {
         if(diagonale[i] > massimo)
@@ -70,7 +89,7 @@ int max(int *diagonale, int n){
 
 int main(int argc, char *argv[]){
     double t0,t1,t;
-
+    int massimo = 0;
     if(argc != 2){
         printf("Inserire un argomento all'avvio da linea di comando...\nEsempio ./a.out 100\n");
         return 1;
@@ -89,7 +108,10 @@ int main(int argc, char *argv[]){
     visualizzaDiagonale(diagonale,n);
 
     // Trovare il massimo del vettore
-    int massimo = max(diagonale,n);
+    if(NC == 2 || NC == 4 || NC == 8 || NC ==16)
+        massimo = max_strategia2(diagonale,n);
+    else
+        massimo = max_strategia1(diagonale,n);
 
     // Fine calcolo tempo 
     t1 = omp_get_wtime();
