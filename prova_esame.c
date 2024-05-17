@@ -72,7 +72,7 @@ int main(int argc, char *argv[]){
     double t0,t1,t;
 
     if(argc != 2){
-        printf("Inserire un argomento\n");
+        printf("Inserire un argomento all'avvio da linea di comando...\nEsempio ./a.out 100\n");
         return 1;
     }    
     int n = atoi(argv[1]);
