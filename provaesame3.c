@@ -15,14 +15,13 @@
 #include <omp.h>
 #include <time.h>
 
-int** AllocaMat(int** matrice, int n){
+int** AllocaMat(int** matrice, int righe, int colonne){
     int i;
-    matrice = (int**) malloc(n * sizeof(int*));
+    matrice = (int**) malloc(righe * sizeof(int*));
 
-    for(i = 0; i < n ; i++){
-        matrice[i] = (int*) malloc(n * sizeof(int));
+    for(i = 0; i < righe ; i++){
+        matrice[i] = (int*) malloc(colonne * sizeof(int));
     }
-
     return matrice;
 }
 
@@ -59,7 +58,9 @@ int main(){
     printf("Inserire il numero di colonne\n");
     scanf("%d",&m);
 
-    int **A = AllocaMat(A,n);
+    int **A = AllocaMat(A,n,m);
+    int **Bloc = AllocaMat(Bloc, m,n);
+    int **c = AllocaMat(c,m, n);
 
     // 1) Il core master deve generare e leggere una matrice A di dimensione M×N
     #pragma omp master
@@ -76,7 +77,7 @@ int main(){
     // decomponendo la matrice A per blocchi riga, e costruendo la trasposta di tale sottomatrice,
     // in una matrice Bloc
 
-    int **Bloc = AllocaMat(Bloc, m);
+
     int i,j;
     #pragma omp parallel for num_threads(np) shared(A,Bloc) private(i,j)
     for(i = 0; i < n; i++)
@@ -92,7 +93,7 @@ int main(){
     //3) Infine i core devono collaborare
     // per sommare le sotto matrici estratte Bloc in un’unica matrice finale C
 
-    int **c = AllocaMat(c,m);
+
 
     #pragma omp parallel for num_threads(np) shared(c, Bloc) private(i, j)
     for (i = 0; i < m; i++) {
@@ -105,6 +106,7 @@ int main(){
     }
 
     tf = omp_get_wtime();
+
     t_tot = tf - ti;
     //4) Il core master stampa la matrice risultato e il tempo d’esecuzione.
     #pragma omp master

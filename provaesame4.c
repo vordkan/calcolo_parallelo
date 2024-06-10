@@ -156,7 +156,6 @@ int main(){
 
     #pragma omp master
     {
-        printf("Sono il core supremo prostati ai miei piedi\n");
         printf("\nIl massimo del vettore c trovato è %d\nIl tempo di esecuzione è %f\n", MAX,t_tot);
     }
 
