@@ -15,127 +15,126 @@
 #include <omp.h>
 #include <time.h>
 
-int np, N;
-
 int** AllocaMat(int** matrice, int n){
-    matrice = (int**)malloc(n * sizeof(int*));
+    int i = 0;
+    matrice = (int**) malloc (n * sizeof(int*));
 
-    for(int i = 0; i < n; i++)
-        matrice[i] = (int*)malloc(n * sizeof(int));
-
+    for(i = 0; i < n; i++){
+        matrice[i] = (int*) malloc (n * sizeof(int));
+    }
     return matrice;
 }
 
-int* AllocaVett(int* vettore, int n){
-    vettore = (int*)malloc(n*sizeof(int));
+int* AllocaVet(int* vettore, int n){
+    vettore = (int*) malloc (n * sizeof (int));
     return vettore;
 }
 
 void PopolaMat(int** matrice, int n){
-    for(int i = 0; i < n; i++){
-        for(int j = 0; j < n; j++){
-            matrice[i][j] = (rand()%10) + 1;
+    int i,j;
+    for(i = 0; i < n; i++){
+        for(j = 0; j < n; j++){
+            matrice[i][j] = (rand() % 10) + 1;
         }
     }
 }
 
-void PopolaVett(int* vettore, int n){
-    for(int i = 0; i < n; i++){
-        vettore[i] = (rand()%10)+1;
+void PopolaVet(int* vettore, int n){
+    int i = 0;
+    for(i = 0; i < n; i++){
+        vettore[i] = (rand() % 10) + 1;
     }
 }
 
 void VisualizzaMat(int** matrice, int n){
-    for(int i = 0; i < n; i++){
-        for(int j = 0; j < n; j++){
-            printf("[%d]\t",matrice[i][j]);
+    int i,j;
+    for(i = 0; i < n; i++){
+        for(j = 0; j < n; j++){
+            printf("[%d] \t", matrice[i][j]);
         }
         printf("\n");
     }
 }
 
-void VisualizzaVett(int* vettore, int n){
-    for(int i = 0; i < n; i++){
-        printf("[%d]\t",vettore[i]);
+void VisualizzaVet(int* vettore, int n){
+    int i = 0;
+    for(i = 0; i < n; i++){
+        printf("[%d]\t", vettore[i]);
     }
     printf("\n");
 }
 
-int main(){
-    int** B;
-    int** A;
-    int* a;
-    int* b;
-    int i, j;
-    double ti,tf,t_tot;
+int main(int argc, char* argv[]){
+    int n, np, i, j, somma = 0, prodotto = 1;
     srand(time(NULL));
+    if(argc < 2){
+        perror("Inserire da input la n e np\n");
+        return 0;
+    }
 
-    printf("Inserire il numero di processi\n");+
-    scanf("%d",&np);
-
-    printf("Inserire la dimensione N\n");
-    scanf("%d",&N);
+    n = atoi(argv[1]);
+    np = atoi(argv[2]);
+    int** A = AllocaMat(A,n);
+    int** B = AllocaMat(B,n);
+    int* a = AllocaVet(a,n);
+    int* b = AllocaVet(b,n);
+    int* prodotto_colonne = AllocaVet(prodotto_colonne, n);
+    double ti, tf, tot;
 
     // 1. Il core master deve generare una matrice B di dimensioni NxN e due vettori a,b di lunghezza N.
     #pragma omp master
     {
-        printf("Genero la matrice...\n");
-        B = AllocaMat(B,N);
-        PopolaMat(B,N);
-
-        printf("Genero i vettori a e b...\n");
-        a = AllocaVett(a,N);
-        b = AllocaVett(b,N);
-
-        PopolaVett(a,N);
-        PopolaVett(b,N);
+        PopolaMat(B,n);
+        PopolaVet(a,n);
+        PopolaVet(b,n);
     }
 
-    printf("\nIl core master ha generato la matrice B:\n");
-    VisualizzaMat(B,N);
+    printf("\nMatrice B:\n");
+    VisualizzaMat(B,n);
 
-    printf("\nIl core master ha generato il vettore a\n");
-    VisualizzaVett(a,N);
+    printf("\nVettore a:\n");
+    VisualizzaVet(a,n);
 
-    printf("\nIl core master ha generato il vettore b\n");
-    VisualizzaVett(b,N);
+    printf("\nVettore b:\n");
+    VisualizzaVet(b,n);
 
+    //2. I core devono collaborare per costruire in parallelo una nuova matrice A ottenuta
+    // sommando alla diagonale principale della matrice B il vettore b.
     ti = omp_get_wtime();
-    // 2. I core devono collaborare per costruire in parallelo una nuova matrice A ottenuta sommando alla diagonale principale della matrice B il vettore b.
-    A = AllocaMat(A,N);
-    #pragma omp parallel for private(i,j) shared(B,b) num_threads(np)
-    for(i = 0; i < N; i++)
+    #pragma omp parallel for shared(A,B,b) private(i,j) num_threads(np) reduction(+:somma)
+    for(i = 0; i < n; i++)
     {
-        for(j = 0; j < N; j++){
-            if(i == j)
-                A[i][j] = B[i][j] + b[i];
-            else 
+        for(j = 0; j < n; j++){
+            if(i == j){
+                somma = B[i][j] + b[i];
+                A[i][j] = somma;
+            }
+            else
                 A[i][j] = B[i][j];
         }
     }
-    
+
     printf("\nMatrice A:\n");
-    VisualizzaMat(A,N);
-    // 3. Quindi i core devono collaborare per calcolare in parallelo il prodotto tra la matrice Axa distribuendo il lavoro per colonne.
-    #pragma omp parallel for private(i,j) shared(a) num_threads(np)
-    for(j = 0; j < N; j++)
+    VisualizzaMat(A,n);
+
+    //3. Quindi i core devono collaborare per calcolare in parallelo il prodotto tra la matrice Axa
+    // distribuendo il lavoro per colonne.
+    #pragma omp parallel for shared(A,a) private(i,j) num_threads(np) reduction(*:prodotto)
+    for(i = 0; i < n; i++)
     {
-        for(i = 0; i < N; i++){
-            A[i][j] *= a[j];
+        for(j = 0; j < n; j++){
+            prodotto = A[j][i] * a[i];
+            prodotto_colonne[i] += prodotto;
         }
     }
     tf = omp_get_wtime();
-
-    t_tot = tf - ti;
-
+    tot = tf - ti;
     // 4. In fine il core master stampa il risultato finale ed il tempo di esecuzione.
     #pragma omp master
     {
-        printf("\nRisultato matrice A moltiplicando per colonne Axa:\n");
-        VisualizzaMat(A,N);
-        printf("\nTempo di esecuzione del programma %f:\n",t_tot);
+        printf("\nVettore prodotto per colonne:\n");
+        VisualizzaVet(prodotto_colonne,n);
+        printf("\nTempo totale del programma: %f\n",tot);
     }
-
     return 0;
 }
-
