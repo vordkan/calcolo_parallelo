@@ -129,6 +129,7 @@ int main(int argc, char* argv[]){
     }
     tf = omp_get_wtime();
     tot = tf - ti;
+
     // 4. In fine il core master stampa il risultato finale ed il tempo di esecuzione.
     #pragma omp master
     {
