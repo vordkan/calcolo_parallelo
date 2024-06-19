@@ -10,6 +10,7 @@
 
     4. In fine il core master stampa il risultato finale ed il tempo di esecuzione.
 */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
@@ -80,7 +81,9 @@ int main(int argc, char* argv[]){
     int* b = AllocaVet(b,n);
     int* prodotto_colonne = AllocaVet(prodotto_colonne, n);
     double ti, tf, tot;
-
+    for(i=0;i<n;i++){
+        prodotto_colonne[i]  = 1;
+    }
     // 1. Il core master deve generare una matrice B di dimensioni NxN e due vettori a,b di lunghezza N.
     #pragma omp master
     {
@@ -101,12 +104,32 @@ int main(int argc, char* argv[]){
     //2. I core devono collaborare per costruire in parallelo una nuova matrice A ottenuta
     // sommando alla diagonale principale della matrice B il vettore b.
     ti = omp_get_wtime();
+    somma=0;
     #pragma omp parallel for shared(A,B,b) private(i,j) num_threads(np) reduction(+:somma)
+    /*** togli il for
+     * r = N % numT;
+        nloc = N / numT;
+        if (omp_get_thread_num() < r) {
+            nloc++;
+            step = 0;
+        } else {
+            step = r;
+        }
+     */
+    /***for (i = 0; i < nloc; i++) {
+        indice = i + nloc * omp_get_thread_num() + step;
+        for (j = 0; j < M; j++) {
+//            mat[i][j] = (int) rand();
+            mat[indice][j] = 1;
+        }
+    }***/
     for(i = 0; i < n; i++)
     {
         for(j = 0; j < n; j++){
+
+            somma=0;
             if(i == j){
-                somma = B[i][j] + b[i];
+                somma += B[i][j] + b[i];
                 A[i][j] = somma;
             }
             else
@@ -119,12 +142,11 @@ int main(int argc, char* argv[]){
 
     //3. Quindi i core devono collaborare per calcolare in parallelo il prodotto tra la matrice Axa
     // distribuendo il lavoro per colonne.
-    #pragma omp parallel for shared(A,a) private(i,j) num_threads(np) reduction(*:prodotto)
+    #pragma omp parallel for shared(A,a) private(i,j) num_threads(np) reduction(*:prodotto_colonne[:n])
     for(i = 0; i < n; i++)
     {
         for(j = 0; j < n; j++){
-            prodotto = A[j][i] * a[i];
-            prodotto_colonne[i] += prodotto;
+            prodotto_colonne[i] = A[j][i] * a[i];
         }
     }
     tf = omp_get_wtime();
@@ -135,7 +157,7 @@ int main(int argc, char* argv[]){
     {
         printf("\nVettore prodotto per colonne:\n");
         VisualizzaVet(prodotto_colonne,n);
-        printf("\nTempo totale del programma: %f\n",tot);
+        printf("\nTempo totale del programma: [%.16lf]\n",tot);
     }
     return 0;
 }
