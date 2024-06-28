@@ -80,7 +80,7 @@ int main(int argc, char* argv[]){
     int** A = allocaMat(N, m);
     int* b = allocaVet(m);
 
-#pragma omp parallel for private(i,j) shared(A, m, N) num_threads(np)
+    #pragma omp parallel for private(i,j) shared(A, m, N) num_threads(np)
     for(i = 0; i < N; i++){
         for(j = 0; j < m; j++){
             A[i][j] = (rand() % 9) + 1;
@@ -92,7 +92,7 @@ int main(int argc, char* argv[]){
 
     popolaVet(b,m);
 
-#pragma omp master
+    #pragma omp master
     {
         printf("\nVettore b:\n");
         stampaVet(b,m);
@@ -101,7 +101,7 @@ int main(int argc, char* argv[]){
     //2. Tutti i core devono calcolare localmente il prodotto c = A x b
     int* c = (int*) malloc (N * sizeof(int));
     int somma = 0;
-#pragma omp parallel for shared (A, b, c, N, m) private(i, j) num_threads(np) reduction(+:somma)
+    #pragma omp parallel for shared (A, b, c, N, m) private(i, j) num_threads(np) reduction(+:somma)
     for(i=0; i<N; i++)
     {
         somma = 0;
@@ -119,18 +119,18 @@ int main(int argc, char* argv[]){
     // *    globale tra tutti i vettori locali c
 
     int massimo = 0;
-#pragma omp parallel for shared(c,m) private(i) num_threads(np) reduction(max:massimo)
+    #pragma omp parallel for shared(c,m) private(i) num_threads(np) reduction(max:massimo)
     for(i = 0; i < N; i++)
     {
         if(c[i] > massimo )
-            massimo = c[i];
+             massimo = c[i];
     }
     tf = omp_get_wtime();
     t = tf - ti;
 
     // 4. Infine, il core master deve stampare il valore massimo
     //    globale trovato ed il tempo d'esecuzione.
-#pragma omp master
+    #pragma omp master
     {
         printf("\nMassimo trovato tra i vettori: %d. Tempo di esecuzione totale %f\n", massimo, t);
     }
