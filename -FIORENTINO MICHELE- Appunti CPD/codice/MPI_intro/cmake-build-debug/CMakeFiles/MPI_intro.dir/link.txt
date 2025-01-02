@@ -1,1 +1,0 @@
-/usr/bin/cc -g   CMakeFiles/MPI_intro.dir/sommaMP.c.o  -o MPI_intro 

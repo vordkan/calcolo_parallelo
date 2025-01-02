@@ -1,3 +1,0 @@
-/mnt/c/Users/miche/Documents/GitHub/AppuntiUni/Calcolo parallelo e distribuito/codice/MPI_intro/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/mnt/c/Users/miche/Documents/GitHub/AppuntiUni/Calcolo parallelo e distribuito/codice/MPI_intro/cmake-build-debug/CMakeFiles/edit_cache.dir
-/mnt/c/Users/miche/Documents/GitHub/AppuntiUni/Calcolo parallelo e distribuito/codice/MPI_intro/cmake-build-debug/CMakeFiles/MPI_intro.dir
